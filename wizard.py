@@ -35,7 +35,7 @@ from PyQt6.QtWidgets import (
 
 
 APP_NAME = "Wave Hub Setup"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 VENDOR = "Wave"
 
 GNU_GPL_URL = "https://www.gnu.org/licenses/gpl-3.0.txt"
@@ -639,7 +639,8 @@ class WizardWindow(QMainWindow):
         self.auth_input.setMaxLength(6)
         self.auth_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.auth_input.setFont(QFont("Cascadia Code", 18))
-        self.auth_input.textChanged.connect(lambda value: self.auth_input.setText(value.upper()))
+        self.auth_input.textChanged.connect(self._on_auth_text_changed)
+        self.auth_input.returnPressed.connect(self.verify_auth_code)
         cl.addWidget(self.auth_input)
 
         self.auth_status = QLabel()
@@ -986,7 +987,14 @@ class WizardWindow(QMainWindow):
         if index == 1:
             self.next_button.setEnabled(True)
         elif index == 3:
-            self.next_button.setEnabled(self.auth_verified)
+            # Never leave the authentication step with a permanently disabled
+            # Next button. It becomes enabled live when a complete 6-character
+            # code has been entered, and remains enabled after verification.
+            ready = self.auth_verified or len(self.auth_input.text().strip()) == 6
+            self.next_button.setEnabled(ready)
+            if not self.auth_verified:
+                self.auth_input.setEnabled(True)
+                self.auth_input.setFocus()
         elif index == 5:
             self.next_button.setEnabled(False)
         elif index == 6:
@@ -1111,11 +1119,37 @@ class WizardWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Authentication
     # ------------------------------------------------------------------
+    def _on_auth_text_changed(self, value: str) -> None:
+        # Normalize the authentication field to A-Z/0-9 and update navigation
+        # immediately. The important part is that the user can actually press
+        # Next after entering the six-character code.
+        cleaned = "".join(
+            ch for ch in value.upper()
+            if ch in string.ascii_uppercase + string.digits
+        )[:6]
+
+        if cleaned != value:
+            cursor = self.auth_input.cursorPosition()
+            self.auth_input.blockSignals(True)
+            self.auth_input.setText(cleaned)
+            self.auth_input.blockSignals(False)
+            self.auth_input.setCursorPosition(min(cursor, len(cleaned)))
+
+        if self.current_step == 3 and not self.auth_verified:
+            # Enable Next only for a complete code. This prevents a partial
+            # code from consuming one of the three verification attempts.
+            self.next_button.setEnabled(len(cleaned) == 6)
+
     def verify_auth_code(self) -> None:
         if not self.auth_code:
             return
 
         entered = self.auth_input.text().strip().upper()
+        if len(entered) != 6:
+            self.auth_status.setText("Enter the complete 6-character authentication code.")
+            self.auth_input.setFocus()
+            return
+
         if entered == self.auth_code:
             self.auth_verified = True
             self.auth_status.setText("Authentication successful. You can continue.")
@@ -1146,6 +1180,7 @@ class WizardWindow(QMainWindow):
         )
         self.auth_input.selectAll()
         self.auth_input.setFocus()
+        self.next_button.setEnabled(True)
 
     # ------------------------------------------------------------------
     # Installation
