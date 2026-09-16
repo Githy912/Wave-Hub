@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <style>
+      @keyframes spin-continuous-slow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes spin-90-very-slow {
+        0%, 15% { transform: rotate(0deg); }
+        25%, 40% { transform: rotate(90deg); }
+        50%, 65% { transform: rotate(180deg); }
+        75%, 90% { transform: rotate(270deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .squircle-step {
+        transform-origin: 100px 100px;
+        animation: spin-90-very-slow 6.4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .spinner-smooth {
+        transform-origin: 100px 100px;
+        animation: spin-continuous-slow 3.2s infinite linear;
+      }
+    </style>
+
+    <linearGradient id="osuBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#66ccff" />
+      <stop offset="100%" stop-color="#0088cc" />
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#18181b" rx="20" />
+
+  <g filter="url(#shadow)">
+    <path class="squircle-step" 
+          d="M 100,25 
+             C 160,25 175,40 175,100 
+             C 175,160 160,175 100,175 
+             C 40,175 25,160 25,100 
+             C 25,40 40,25 100,25 Z" 
+          fill="#222228" />
+
+    <circle class="spinner-smooth" 
+            cx="100" 
+            cy="100" 
+            r="38" 
+            fill="none" 
+            stroke="url(#osuBlue)" 
+            stroke-width="11" 
+            stroke-dasharray="160 80" 
+            stroke-linecap="round" />
+  </g>
+</svg>
